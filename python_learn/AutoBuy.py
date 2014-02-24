@@ -8,6 +8,7 @@ from test.test_iterlen import len
 tbLoginUrl = "https://login.taobao.com/member/login.jhtml"
 shoppingurl = "http://item.taobao.com/item.htm?id=37373807880&spm=a310v.4.88.1"
 checkCodeUrl = ''
+g_tb_token = ''
 # post请求头部
 headers = {
     'x-requestted-with': 'XMLHttpRequest',
@@ -24,6 +25,7 @@ headers = {
 # 用户名，密码
 username = "you_xin_cao"
 password = raw_input("Please input your password of taobao: ")
+
 # 请求数据包
 postData = {   
     'TPL_username':username,
@@ -119,6 +121,11 @@ def sendPostData(url, data, header):
     result = handleResponseText(text)
     if result["state"]:
         print "successfully login in!"
+        m1 = re.match('.*"token":"(.*)"}.*', text)
+        if m1 : 
+            global g_tb_token
+            g_tb_token = m1.group(1)
+            print g_tb_token 
     else:
         print "failed to login in, error message: ", result["message"]
  
@@ -320,8 +327,9 @@ def getChooseSku(valuelist , skuMap):
     return None 
           
 if __name__ == "__main__":   
-#     loginToTaobao()
-#     resetCheckCode()
+    loginToTaobao()
+    resetCheckCode()
+    
     shoppingItems = getShoppingInfo(shoppingurl)
     skumap = getSkuMap(shoppingurl)
     for item in skumap :
@@ -332,3 +340,5 @@ if __name__ == "__main__":
     
     chooseSkuItem = getChooseSku(valueList, skumap)
     print chooseSkuItem
+    
+    print "Token " , g_tb_token 
