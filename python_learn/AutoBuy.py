@@ -7,6 +7,7 @@ from test.test_iterlen import len
 # 登录地址
 tbLoginUrl = "https://login.taobao.com/member/login.jhtml"
 shoppingurl = "http://item.taobao.com/item.htm?id=37373807880&spm=a310v.4.88.1"
+buyNowUrl = "http://buy.taobao.com/auction/buy_now.jhtml"
 checkCodeUrl = ''
 g_tb_token = ''
 # post请求头部
@@ -326,10 +327,43 @@ def getChooseSku(valuelist , skuMap):
             return sku 
     return None 
           
+def parsePostBuyNowData(url):
+    content = urllib2.urlopen(url)      
+    form_start = False 
+    
+    formItems = [] 
+    for line in content : 
+        gbk_line = line.decode('gbk')
+        
+        if not form_start : 
+            # find the start of the form and mark it 
+            if re.search('<form id="J_FrmBid" name="bidForm" action="http://buy.taobao.com/auction/buy_now.jhtml" method="post"', gbk_line) : 
+                form_start = True 
+                continue 
+        
+        if form_start : 
+            # end of the form break the loop 
+            if re.search('</form>' , gbk_line):
+                break 
+            
+            # get the input element and store it in the formItems 
+            for item in gbk_line.split('/>') : 
+                if re.search('<input' , item) : 
+                    formItems.append(item)
+                    
+    # parse the form and store it in the buy_now_data 
+    global buy_now_data      
+    for item in formItems :
+        m1 = re.match('.*name="(.*?)".*value.*"(.*?)".*', item)
+        if m1 : 
+            # print "name = " , m1.group(1) , " value = " , m1.group(2)
+            buy_now_data[m1.group(1)] = m1.group(2)
+            
+    
 if __name__ == "__main__":   
     loginToTaobao()
     resetCheckCode()
-    
+     
     shoppingItems = getShoppingInfo(shoppingurl)
     skumap = getSkuMap(shoppingurl)
     for item in skumap :
@@ -337,8 +371,11 @@ if __name__ == "__main__":
     valueList = chooseShoppingItem(shoppingItems)
     for value in valueList :
         print value 
-    
+     
     chooseSkuItem = getChooseSku(valueList, skumap)
     print chooseSkuItem
-    
+     
     print "Token " , g_tb_token 
+    parsePostBuyNowData(shoppingurl)
+    buy_now_data['tb_token'] = g_tb_token 
+    print buy_now_data 
